@@ -2,7 +2,7 @@
 FOREST_FIRE_DATASET_PATH = './../datasets/forest-fire-damage/prepared_ff_damage_dataset.csv'
 STANDARDIZED_DATASET_DELIMETER = ','
 LEARNING_RATE = 1e-6
-MAX_EPOCHS = 10000
+MAX_EPOCHS = 1000
 
 # Imports
 import numpy as np
@@ -39,9 +39,10 @@ def prepare_data():
 
 # Learning
 
-# Declare the numerical variables for our weight(s) and bias
+# Declare the numerical variables for our weight(s), bias, and final output of the cost function
 W = 0
 b = 0
+final_cost = 0
 
 def linear_activation(W_tf, b_tf):
 	# Compute a linear activation with model: X*W + b
@@ -60,19 +61,18 @@ def learn(): # Train a model from data
 		sess.run(tf.initialize_all_variables()) # Initialize the placeholder values
 
 		for i in range(MAX_EPOCHS): # Perform MAX_EPOCHS steps of optimization
-			if i % 100 == 0:
-				print 'Step #%d: %f' % (i, sess.run(cost_function))
 			sess.run(optimizer) # Perform a single weight update
 
 		# Initialize our numerical weights from the TensorFlow session versions
-		global W, b
+		global W, b, final_cost
 		W = sess.run(W_tf)
 		b = sess.run(b_tf)
-		print 'Optimization completed with cost %f', sess.run(cost_function)
+		final_cost = sess.run(cost_function)
 
 def output_results(): # Output optimization results through the console
-	print 'Final weight vector %f', W
-	print 'Final bias value %f', b
+	print 'Optimization complete with final cost', final_cost
+	print 'Final weight vector: \n', W
+	print 'Final bias value', b
 
 if __name__ == "__main__":
 	import_data()
