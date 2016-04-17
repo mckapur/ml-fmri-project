@@ -1,7 +1,8 @@
 # Constants
 FOREST_FIRE_DATASET_PATH = './../datasets/forest-fire-damage/prepared_ff_damage_dataset.csv'
 STANDARDIZED_DATASET_DELIMETER = ','
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-6
+MAX_EPOCHS = 10000
 
 # Imports
 import numpy as np
@@ -34,55 +35,46 @@ def prepare_data():
 	# Separating input features and output from dataset
 	X = ff_dataset[:, :-1].reshape((m, n))
 	y = ff_dataset[:, n].reshape((m, 1))
+	y = np.log(np.add(y, np.ones(y.shape))) # Apply a transformation to the output vector of ln(x + 1) to linearize it due to data's skew to (0, 0)
 
 # Learning
 
-# Declare the numerical variables for our weights and biases in log(X*W_in + b_in)*W_out + b_out
-W_out = 0
-W_in = 0
-b_out = 0
-b_in = 0
+# Declare the numerical variables for our weight(s) and bias
+W = 0
+b = 0
 
-def logarithmic_activation(W_out_tf, W_in_tf, b_out_tf, b_in_tf):
-	# Compute a logarithmic activation with different coefficients for shifts and stretching, with model: log(X*W_in + b_in)*W_out + b_out
-	inner = tf.add(tf.matmul(X, W_in_tf), b_in_tf) # Compute the X*W_in + b_in component
-	composite = tf.add(tf.matmul(tf.log(inner), W_out_tf), b_out_tf) # Compute ln()*X_out + b_out composite
- 	return composite
+def linear_activation(W_tf, b_tf):
+	# Compute a linear activation with model: X*W + b
+ 	return tf.add(tf.matmul(X, W_tf), b_tf)
 
 def learn(): # Train a model from data
-	# Declare the TensorFlow versions of the weights and biases
-	W_out_tf = tf.Variable(tf.constant(0.0, shape=[1, 1]), name="vertical_stretch")
-	W_in_tf = tf.Variable(tf.ones([n, 1]), name="horizontal_stretch")
-	b_out_tf = tf.Variable(tf.constant(0.0, shape=[m, 1]), name="vertical_shift")
-	b_in_tf = tf.Variable(tf.constant(0.0, shape=[m, 1]), name="horizontal_shift")
+	# Declare the TensorFlow versions of the weight(s) and bias variables
+	W_tf = tf.Variable(tf.zeros([n, 1]), name="weight")
+	b_tf = tf.Variable(tf.constant(0.0, shape=[1, 1]), name="bias")
 
-	activation = logarithmic_activation(W_out_tf, W_in_tf, b_out_tf, b_in_tf) # We will use a logarithmic transformation/model
+	activation = linear_activation(W_tf, b_tf) # We will use a linear model
 	cost_function = tf.reduce_sum(tf.square(activation - y))/(2 * m) # Setup the cost function to be standardized L2 loss (mean squared error of activation vs. actual y)
 	optimizer = tf.train.GradientDescentOptimizer(LEARNING_RATE).minimize(cost_function) # Setup the cost optimization method as iterative gradient descent
 
 	with tf.Session() as sess: # Create the session
 		sess.run(tf.initialize_all_variables()) # Initialize the placeholder values
 
-		for i in range(10000):
+		for i in range(MAX_EPOCHS): # Perform MAX_EPOCHS steps of optimization
 			if i % 100 == 0:
 				print 'Step #%d: %f' % (i, sess.run(cost_function))
-			sess.run(optimizer) # Perform optimization
+			sess.run(optimizer) # Perform a single weight update
 
-		# Initialize our numerical weights from the TF session versions
-		global W_out, W_in, b_out, b_in
-		W_out = sess.run(W_out_tf)
-		W_in = sess.run(W_in_tf)
-		b_out = sess.run(b_out_tf)
-		b_in = sess.run(b_in_tf)
-		print sess.run(cost_function)
+		# Initialize our numerical weights from the TensorFlow session versions
+		global W, b
+		W = sess.run(W_tf)
+		b = sess.run(b_tf)
+		print 'Optimization completed with cost %f', sess.run(cost_function)
 
-def output_results(): # output optimization results through the console
-	print W_out
-	print W_in
-	print b_out
-	print b_in
+def output_results(): # Output optimization results through the console
+	print 'Final weight vector %f', W
+	print 'Final bias value %f', b
 
 if __name__ == "__main__":
 	import_data()
 	learn()
-	# output_results()
+	output_results()
