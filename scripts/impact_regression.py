@@ -1,8 +1,8 @@
 # Constants
 FOREST_FIRE_DATASET_PATH = './../datasets/forest-fire-damage/prepared_ff_damage_dataset.csv'
 STANDARDIZED_DATASET_DELIMETER = ','
-LEARNING_RATE = 1e-7
-MAX_EPOCHS = 100
+LEARNING_RATE = 1e-6
+MAX_EPOCHS = 5000
 
 # Imports
 import math
@@ -52,7 +52,7 @@ def learn(): # Train a model from data using TensorFlow
 	b_tf = tf.Variable(tf.constant(0.0, shape=[1, 1]), name="bias")
 
 	activation = tf.add(tf.matmul(X_tf, W_tf), b_tf) # Compute a linear activation with model: X*W + b. This assumes X is an 1 x n matrix and W is an n x 1 vector.
-	cost_function = tf.reduce_sum(tf.div(tf.square(tf.sub(activation, y_tf)), (2 * m))) # Setup the cost function to be standardized L2 loss (mean squared error of activation vs. actual y)
+	cost_function = tf.div(tf.reduce_sum(tf.abs(tf.sub(activation, y_tf))), m) # Setup the cost/error function to be standardized l1 loss (mean absolute value of activations vs. target outputs)
 	optimizer = tf.train.GradientDescentOptimizer(LEARNING_RATE).minimize(cost_function) # Setup the cost optimization method as iterative gradient descent
 
 	with tf.Session() as sess: # Create the session
@@ -76,20 +76,18 @@ def predict(x): # Take a feature vector x and compute a prediction based on the 
 
 # Post-Training
 
-def compute_cost(): # Computes the universal cost over the training set
+def compute_cost(): # Computes the universal cost over the training set using the l1 loss
 	cost = 0
 	for i in range(X.shape[0]): # Iterate through all the training cases
-		cost += np.square(inverse_ln_transformation(y[i]) - predict(X[i, :])) # Get the square of discrepency between predicted and actual
-	cost /= (2 * m) # Get mean of cost
+		cost += np.abs(inverse_ln_transformation(y[i]) - predict(X[i, :])) # Get the absolute discrepency between predicted and actual
+	cost /= m # Get mean of cost
 	return cost
 
 def output_results(): # Output optimization results through the console
 	print 'Optimization complete'
 	print 'Final weight vector: \n', W
 	print 'Final bias value', b
-	print 'Final cost is ', compute_cost()
-	for i in range(X.shape[0]):
-		print predict(X[i, :]), inverse_ln_transformation(y[i])
+	print 'Final MAE/MAD cost is ', compute_cost()
 
 if __name__ == "__main__":
 	import_data()
