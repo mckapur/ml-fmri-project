@@ -41,5 +41,4 @@ if __name__ == "__main__":
 	ax.scatter(x_data, y_data, z_data, 'bo')
 
 	ax.set_zlabel('Transformed area')
-
 	plt.show()
