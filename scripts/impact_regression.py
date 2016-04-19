@@ -1,7 +1,3 @@
-# Constants
-LEARNING_RATE = 1e-6
-MAX_EPOCHS = 10000
-
 # Imports
 import math
 import numpy as np
@@ -26,5 +22,5 @@ if __name__ == "__main__":
 
 	model = LinearRegression()
 	model.fit(X, y)
-
+	
 	print compute_cost(X, y, model.predict(X))
