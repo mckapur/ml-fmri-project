@@ -1,0 +1,130 @@
+name: "4D Sparse Autoencoder"
+
+# Training data
+layer {
+  name: "data"
+  type: "Data"
+
+  include {
+    phase: TRAIN
+  }
+
+  data_param {
+    source: "data/4d_train"
+    backend: LMDB
+    batch_size: 64
+  }
+
+  top: "data"
+}
+
+# Validation data
+layer {
+  name: "data"
+  type: "Data"
+
+  include {
+    phase: TEST
+    stage: "test-on-train"
+  }
+
+  data_param {
+    source: "data/4d_validation"
+    backend: LMDB
+    batch_size: 64
+  }
+
+  top: "data"
+}
+
+# Test data
+layer {
+  name: "data"
+  type: "Data"
+
+  include {
+    phase: TEST
+    stage: "test-on-test"
+  }
+
+  data_param {
+    source: "data/4d_test"
+    backend: LMDB
+    batch_size: 64
+  }
+
+  top: "data"
+}
+
+# Flatten
+layer {
+  name: "flatten"
+  type: "Flattening"
+  bottom: "data"
+  top: "flatdata"
+}
+
+# Encoder
+layer {
+  name: "enc"
+  type: "InnerProduct"
+  param { lr_mult: 1 } # alpha multiplier for weights
+  param { lr_mult: 2 } # alpha multiplier for biases
+  inner_product_param {
+    num_output: 300 # 300-dimensional latent space
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+
+  bottom: "flatdata"
+  top: "enc"
+}
+
+# ReLU
+layer {
+  name: "enc-relu"
+  type: "ReLU"
+  bottom: "enc"
+  top: "enc-relu"
+}
+
+# Decoder
+layer {
+  name: "dec"
+  type: "InnerProduct"
+  param { lr_mult: 1 }
+  param { lr_mult: 2 }
+  inner_product_param {
+    num_output: 625 # 5x5x5x5
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+  bottom: "enc-relu"
+  top: "dec"
+}
+
+# Loss
+layer {
+  type: "Python"
+  name: "loss"
+  top: "loss"
+  bottom: "flatdata"
+  bottom: "dec"
+  bottom: "enc-relu"
+  propagate_down: false
+  propogate_down: true
+  propogate_down: false
+  python_param {
+    module: "sparse_autoencoder_loss"
+    layer: "SparseAutoencoderLoss"
+  }
+  loss_weight: 1
+}
