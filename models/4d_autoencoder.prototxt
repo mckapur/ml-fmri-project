@@ -1,4 +1,4 @@
-name: "4D Sparse Autoencoder"
+name: "4d-autoencoder"
 
 # Training data
 layer {
@@ -10,7 +10,7 @@ layer {
   }
 
   data_param {
-    source: "data/4d_train"
+    source: "data/4d_ae_train"
     backend: LMDB
     batch_size: 64
   }
@@ -29,7 +29,7 @@ layer {
   }
 
   data_param {
-    source: "data/4d_validation"
+    source: "data/4d_ae_validation"
     backend: LMDB
     batch_size: 64
   }
@@ -48,7 +48,7 @@ layer {
   }
 
   data_param {
-    source: "data/4d_test"
+    source: "data/4d_ae_test"
     backend: LMDB
     batch_size: 64
   }
