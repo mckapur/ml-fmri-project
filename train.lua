@@ -101,9 +101,8 @@ function train()
 
    -- accuracy
    local correct = 0
-   local _, predictions = outputs:float()
-   for i = 1,opt.batchSize do
-     if predictions[i][labelsCPU[i]] > 0.5 then
+   for i = 1,testData:size()[0] do
+     if outputs[i][valLabels[i]] > 0.5 then
        correct = correct + 1
      end
    end
