@@ -23,19 +23,17 @@ function createModel(nGPU)
   model:add(nn.LogSoftMax())
 
   -- https://github.com/soumith/imagenet-multiGPU.torch/blob/master/models/alexnet.lua
-  if nGPU >= 1 then
-    -- Ship to GPU
-    model:cuda()
+  -- Ship to GPU
+  model:cuda()
 
-    -- Make parallel-ready
-    local model_single = model
-    model = nn.DataParallelTable(1)
-    for i=1, nGPU do
-       cutorch.setDevice(i)
-       model:add(model_single:clone():cuda(), i)
-    end
-    cutorch.setDevice(1)
+  -- Make parallel-ready
+  local model_single = model
+  model = nn.DataParallelTable(1)
+  for i=1, nGPU do
+     cutorch.setDevice(i)
+     model:add(model_single:clone():cuda(), i)
   end
+  cutorch.setDevice(1)
 
   return model
 end
