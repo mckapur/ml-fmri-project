@@ -22,7 +22,7 @@ local err = criterion:forward(outputs, testLabels)
 -- accuracy
 local correct = 0
 for i = 1,tData.size()[0] do
-  if outputs[i][tLabels[i]] > 0.5 then
+  if outputs[i][tLabels[i]+1] > 0.5 then
     correct = correct + 1
   end
 end
