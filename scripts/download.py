@@ -1,7 +1,7 @@
 import boto
 import os
 
-def download(data_folder='data/'):
+def download(data_folder='data/raw-mris/'):
     conn = boto.connect_s3(anon=True)
     bucket = conn.get_bucket('fcp-indi')
     for key in bucket.list('data/Projects/ABIDE_Initiative/Outputs/cpac/func_minimal/'):
