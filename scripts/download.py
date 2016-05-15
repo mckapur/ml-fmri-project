@@ -1,7 +1,40 @@
 import boto
 import os
+import threading
+import multiprocessing
+import sys
+
+queuelock = threading.Lock()
+count = 0
+queue = []
+
+
+class DownloadThread(threading.Thread):
+    def __init__(self, id):
+        threading.Thread.__init__(self)
+        self.id = id
+
+    def run(self):
+        global count
+        print '[%d] Download thread starting' % self.id
+        sys.stdout.flush()
+        while len(queue) > 0:
+            queuelock.acquire()
+            key, path, filename = queue.pop()
+            queuelock.release()
+
+            print '[%d] Downloading %s (%.0fMB)' % (self.id, filename, key.size / 1024**2)
+            sys.stdout.flush()
+            try:
+                key.get_contents_to_filename(path)
+            except:
+                queuelock.acquire()
+                queue.append((key, path, filename))
+                queuelock.release()
+        count -= 1
 
 def download(data_folder='data/raw-mris/'):
+    global count
     # Download MRI scan files from AWS S3 bucket
     conn = boto.connect_s3(anon=True)
     bucket = conn.get_bucket('fcp-indi')
@@ -15,9 +48,18 @@ def download(data_folder='data/raw-mris/'):
         path = os.path.join(data_folder, filename)
 
         if not os.path.isfile(path) or os.path.getsize(path) != key.size:
-            # Save file to disk
-            print 'Downloading %s (%.0fMB)' % (filename, key.size / 1024**2)
-            key.get_contents_to_filename(path)
+            # Add file to queue
+            queue.append((key, path, filename))
+
+    for i in xrange(multiprocessing.cpu_count()):
+        t = DownloadThread(i)
+        t.daemon = True
+        t.start()
+
+        count += 1
+
+    while count > 0:
+        pass
 
 if __name__ == '__main__':
     download()
