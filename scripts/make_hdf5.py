@@ -8,12 +8,12 @@ import scipy.ndimage as ndimage
 import threading
 
 # Constants
-STANDARD_TIME_STEP = 3 # 3 seconds is the standard time step between MRI scan images
+STANDARD_TIME_STEP = 3 # 3 units is the standard time step between MRI scan images
 STANDARD_MRI_DIMENSIONALITY = (61, 73, 61) # The standard dimensionality that each MRI scan should be modelled in and conform to
 
 # Extract metadata from CSV form and format for use
 metadata = {}
-with open('./../data/abide_metadata.csv', 'rU') as csvfile:
+with open('./data/abide_metadata.csv', 'rU') as csvfile:
     abide_attributes = csv.reader(csvfile, delimiter=';')
     is_headers = True
     for row in abide_attributes:
@@ -23,9 +23,10 @@ with open('./../data/abide_metadata.csv', 'rU') as csvfile:
         else:
             is_headers = False
 
+del metadata['no_filename']
 
 # HDF5 database setup
-hdf5_dir = './../data/hdf-5/' # Path to HDF5 folder
+hdf5_dir = './data/hdf-5/' # Path to HDF5 folder
 hdf5_db = h5py.File(hdf5_dir + 'database.hdf5', 'w') # Create HDF5 file
 
 # Setup HDF5 groups
@@ -40,9 +41,15 @@ con_train_hdf5_grp = con_hdf5_grp.create_group('train')
 con_val_hdf5_grp = con_hdf5_grp.create_group('val')
 con_test_hdf5_grp = con_hdf5_grp.create_group('test')
 
-# Based on CSV metadata file
-aut_m = 448
-con_m = 509
+# Compute number of aut/con samples from metadata
+aut_m = 0
+con_m = 0
+
+for _, info in metadata.iteritems():
+    if info['is_autistic']:
+        aut_m += 1
+    else:
+        con_m += 1
 
 # Counts
 aut_train_m = 0
@@ -57,6 +64,7 @@ def create_hdf5_dataset(f):
     f_id = f[:-20] # Strip off "_func_minimal.nii.gz" to get file_id
     if metadata[f_id]['is_failure'] == True: # If the MRI quality is poor (a failure), discard
         return
+
     # Fetch labels and raw data
     mri_file = nib.load(mri_dir + f) # Convert .nii.gz file to readable version
     mri_data = mri_file.get_data() # Load mri from data file
@@ -70,7 +78,7 @@ def create_hdf5_dataset(f):
     mri_time_step = mri_file.header['pixdim'][4]
     if mri_time_step > STANDARD_TIME_STEP: # We can't handle this!
         return
-    projected_timesteps = int(mri_data_shape[3]*mri_time_step/STANDARD_TIME_STEP) + 1 # Projected dimensionality/size of T in 1xXxYxZxT
+    projected_timesteps = np.ceil(mri_data_shape[3]*mri_time_step/STANDARD_TIME_STEP) # Projected dimensionality/size of T in 1xXxYxZxT
     mri_data_norm = np.zeros(shape=(mri_data_shape[0:3] + (projected_timesteps,))) # Create the normalized MRI scan with the same dimensions for XxYxZ
     mri_data_norm_m = 0
     elapsed_from_standard = STANDARD_TIME_STEP # Add the first timestep
@@ -118,12 +126,13 @@ def create_hdf5_dataset(f):
             con_test_hdf5_grp.create_dataset(str(con_test_m), data=mri_data)
 
 # Extract raw data and format it for use
-mri_dir = './../data/raw-mris/' # All data in ./../data/raw-mris
+mri_dir = './data/raw-mris/' # All data in ./../data/raw-mris
 for f in os.listdir(mri_dir):
     if not f.endswith('.nii.gz'): # Iterate through all files of format .nii.gz
         continue
+    print f
     create_hdf5_dataset(f)
-        
+
 # Setup metadata matrix dataset
 # "A /metadata vector with 6 values (in this order): number of autistic training samples, control training samples, autistic validation samples, control validation samples, autistic test samples, and control test samples."
 metadata_hdf5 = np.array([aut_train_m, con_train_m, aut_val_m, con_val_m, aut_test_m, con_test_m])
