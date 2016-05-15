@@ -1,8 +1,8 @@
 import boto
 import os
 
-def download(data_folder='data/raw-mris/'):
-    # Download MRI scan files from AWS S3 bucket
+def download(data_folder='data/'):
+	# Download MRI scan files from AWS S3 bucket
     conn = boto.connect_s3(anon=True)
     bucket = conn.get_bucket('fcp-indi')
     # We want to download from C-PAC pipeline
@@ -12,12 +12,8 @@ def download(data_folder='data/raw-mris/'):
         if filename == 'func_minimal':
             continue
 
-        path = os.path.join(data_folder, filename)
-
-        if not os.path.isfile(path) or os.path.getsize(path) != key.size:
-            # Save file to disk
-            print 'Downloading %s (%.0fMB)' % (filename, key.size / 1024**2)
-            key.get_contents_to_filename(path)
+        # Save file to disk
+        key.get_contents_to_filename(os.path.join(data_folder, filename))
 
 if __name__ == '__main__':
     download()
