@@ -16,14 +16,14 @@ class DownloadThread(threading.Thread):
 
     def run(self):
         global count
-        print '[%d] Download thread starting' % self.id
+        print '[%2d] Download thread starting' % self.id
         sys.stdout.flush()
         while len(queue) > 0:
             queuelock.acquire()
             key, path, filename = queue.pop()
             queuelock.release()
 
-            print '[%d] Downloading %s (%.0fMB)' % (self.id, filename, key.size / 1024**2)
+            print '[%2d] Downloading %s (%.0fMB)' % (self.id, filename, key.size / 1024**2)
             sys.stdout.flush()
             try:
                 key.get_contents_to_filename(path)
