@@ -1,15 +1,11 @@
 function createModel(nGPU)
   local model = nn.Sequential()
 
-  -- Split along the time dimension
-  model:add(nn.SplitTable(5))
-
   -- Apply convolutions to each time slice
-  local c = nn.ConcatTable()
-  c:add(nn.VolumetricConvolution(1, 96, 5, 5, 5))
-  c:add(nn.ReLU(true))
-  c:add(nn.VolumetricMaxPooling(5, 5, 5, 5, 5, 5))
-  model:add(c)
+  model:add(nn.VolumetricConvolution(1, 96, 5, 5, 5))
+  model:add(nn.ReLU(true))
+  model:add(nn.VolumetricMaxPooling(5, 5, 5, 5, 5, 5))
+  model:add(nn.SplitTable(5))
 
   -- Build the recurrent layer
   local r = nn.GRU(12*18*15, 10)
@@ -23,8 +19,6 @@ function createModel(nGPU)
   model:add(nn.LogSoftMax())
 
   -- https://github.com/soumith/imagenet-multiGPU.torch/blob/master/models/alexnet.lua
-  -- Ship to GPU
-  model:cuda()
 
   -- Make parallel-ready
   local model_single = model

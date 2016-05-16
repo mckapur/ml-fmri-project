@@ -7,14 +7,14 @@ function M.parse(arg)
     cmd:text()
     cmd:text('Options:')
     cmd:option('-checkpoints',     './checkpoints/', 'directory to write checkpoints and log files into')
-    cmd:option('-data',            './data/dataset.hdf5', 'file with dataset')
+    cmd:option('-data',            './data/hdf-5/database.hdf5', 'file with dataset')
     cmd:option('-manualSeed',      2, 'Manually set RNG seed')
-    cmd:option('-nGPU',            1, 'Number of GPUs to use by default (0 to not use GPU)')
+    cmd:option('-nGPU',            4, 'Number of GPUs to use by default (0 to not use GPU)')
 
     cmd:option('-nEpochs',         55,    'Number of total epochs to run')
     cmd:option('-epochSize',       500, 'Number of batches per epoch')
     cmd:option('-epochNumber',     1,     'Manual epoch number (useful on restarts)')
-    cmd:option('-batchSize',       32,   'mini-batch size (1 = pure stochastic)')
+    cmd:option('-batchSize',       4,   'mini-batch size (1 = pure stochastic)')
 
     cmd:option('-LR',              0.0, 'learning rate; if set, overrides default LR/WD recipe')
     cmd:option('-momentum',        0.9,  'momentum')
@@ -25,9 +25,7 @@ function M.parse(arg)
 
     local opt = cmd:parse(arg or {})
     -- add commandline specified options
-    opt.save = paths.concat(opt.cache,
-                            cmd:string(opt.netType, opt,
-                                       {netType=true, retrain=true, optimState=true, cache=true, data=true}))
+    opt.save = opt.checkpoints
     -- add date/time
     opt.save = paths.concat(opt.save, '' .. os.date():gsub(' ',''))
     return opt
