@@ -84,21 +84,18 @@ def create_hdf5_dataset(f):
     elapsed_from_standard = STANDARD_TIME_STEP # Add the first timestep
     for i in xrange(mri_data_shape[3]):
         if elapsed_from_standard >= STANDARD_TIME_STEP:
-            mri_data_norm_m += 1
             mri_curr = mri_data[:, :, :, i]
             #  Perform interpolation if not at exact timestep
             if elapsed_from_standard > STANDARD_TIME_STEP:
                 mri_prev = mri_data[:, :, :, i - 1]
-                X, Y, Z = np.meshgrid(np.arange(mri_data_shape[0]), np.arange(mri_data_shape[1]), np.arange(mri_data_shape[2])) # Define grid coordinates where interpolation occurs for X, Y, Z (we use .arange() so it considers every single point)
                 discrepency_curr = elapsed_from_standard - STANDARD_TIME_STEP
                 discrepency_prev = mri_time_step - discrepency_curr # STANDARD_TIME_STEP - (elapsed_from_standard - mri_time_step) = STANDARD_TIME_STEP - elapsed_from_standard + mri_time_step = mri_time_step - discrepency_curr
                 norm_weight = discrepency_prev / (discrepency_prev + discrepency_curr) # norm_weight defines the perentage weight for mri_curr contributing to the mri_norm over mri_prev
-                norm_coordinates = np.ones(X.shape) * norm_weight, X, Y, Z
-                mri_interpol = np.reshape(ndimage.map_coordinates(np.array([mri_prev, mri_curr]), norm_coordinates), mri_data.shape[0:3])  # Apply interpolation for new mri based on mri_prev and mri_curr
-                mri_data_norm[:, :, :, mri_data_norm_m] = mri_interpol
+                mri_data_norm[:, :, :, mri_data_norm_m] = norm_weight * mri_curr + (1-norm_weight) * mri_prev # Weighted sum
             else: # Effectively using a norm weight of 1, increases efficiency to skip over normalization procedure
                 mri_data_norm[:, :, :, mri_data_norm_m] = mri_curr
             elapsed_from_standard -= STANDARD_TIME_STEP
+            mri_data_norm_m += 1
         elapsed_from_standard += mri_time_step
     mri_data = mri_data_norm
     mri_data = np.expand_dims(mri_data, 0) # Reshape to 5-D format of: 1xXxYxZxT
@@ -127,11 +124,13 @@ def create_hdf5_dataset(f):
 
 # Extract raw data and format it for use
 mri_dir = './data/raw-mris/' # All data in ./../data/raw-mris
+num = 0
 for f in os.listdir(mri_dir):
     if not f.endswith('.nii.gz'): # Iterate through all files of format .nii.gz
         continue
-    print f
+    print num, f
     create_hdf5_dataset(f)
+    num += 1
 
 # Setup metadata matrix dataset
 # "A /metadata vector with 6 values (in this order): number of autistic training samples, control training samples, autistic validation samples, control validation samples, autistic test samples, and control test samples."
