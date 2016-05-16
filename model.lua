@@ -2,7 +2,7 @@ function createModel(nGPU)
   local model = nn.Sequential()
 
   -- Split along the time dimension
-  model:add(nn.SplitTable(6))
+  model:add(nn.SplitTable(3))
 
   -- -- Apply convolutions to each time slice
   -- local c = nn.ConcatTable()
@@ -20,7 +20,7 @@ function createModel(nGPU)
 
   -- Classify
   model:add(nn.Linear(100, 2))
-  model:add(nn.LogSoftMax())
+  model:add(nn.SoftMax())
 
   -- https://github.com/soumith/imagenet-multiGPU.torch/blob/master/models/alexnet.lua
 

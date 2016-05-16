@@ -14,6 +14,7 @@ paths.dofile('dataset.lua')
 
 local model = createModel(opt.nGPU)
 local criterion = nn.CrossEntropyCriterion()
+criterion = criterion:cuda()
 
 local optimState = {
     learningRate = opt.LR,
@@ -46,11 +47,11 @@ local function paramsForEpoch(epoch)
     end
     local regimes = {
         -- start, end,    LR,   WD,
-        {  1,     18,   1e-2,   5e-4, },
-        { 19,     29,   5e-3,   5e-4  },
-        { 30,     43,   1e-3,   0 },
-        { 44,     52,   5e-4,   0 },
-        { 53,    1e8,   1e-4,   0 },
+        {  1,     1,   1e-2,   5e-4, },
+        { 2,     4,   5e-3,   5e-4  },
+        { 5,     8,   1e-3,   0 },
+        { 9,     12,   5e-4,   0 },
+        { 12,    1e8,   1e-4,   0 },
     }
 
     for _, row in ipairs(regimes) do
@@ -95,33 +96,33 @@ function train()
 
    cutorch.synchronize()
 
-   print('==> Evaluating')
-   model:evaluate()
+--   print('==> Evaluating')
+--   model:evaluate()
 
-   local valData, valLabels = read_val()
+--   local valData, valLabels = read_val()
 
-   local evalInputs = torch.CudaTensor()
-   local evalLabels = torch.CudaTensor()
-   evalInputs:resize(valData:size()):copy(valData)
-   evalLabels:resize(valLabels:size()):copy(valLabels)
+--   local evalInputs = torch.CudaTensor()
+--   local evalLabels = torch.CudaTensor()
+--   evalInputs:resize(valData:size()):copy(valData)
+--   evalLabels:resize(valLabels:size()):copy(valLabels)
 
-   local outputs = model:forward(evalInputs)
-   local err = criterion:forward(outputs, evalLabels)
+--   local outputs = model:forward(evalInputs)
+--   local err = criterion:forward(outputs, evalLabels)
 
    -- accuracy
-   local correct = 0
-   for i = 1,testData:size()[0] do
-     if outputs[i][valLabels[i]+1] > 0.5 then
-       correct = correct + 1
-     end
-   end
+--   local correct = 0
+--   for i = 1,testData:size()[0] do
+--     if outputs[i][valLabels[i]+1] > 0.5 then
+--       correct = correct + 1
+--     end
+--   end
 
-   local accuracy = correct * 100 / valData:size()[0]
+--   local accuracy = correct * 100 / valData:size()[0]
 
-   print(string.format('Epoch: [%d][VALIDATION] Total Time(s): %.2f\t'
-                          .. 'average loss (per batch): %.2f \t final loss: %.2f'
-                          .. 'accuracy(%%):\t',
-                       epoch, tm:time().real, loss_epoch, err, accuracy))
+--   print(string.format('Epoch: [%d][VALIDATION] Total Time(s): %.2f\t'
+--                          .. 'average loss (per batch): %.2f \t final loss: %.2f'
+--                          .. 'accuracy(%%):\t',
+--                       epoch, tm:time().real, loss_epoch, err, accuracy))
    print('\n')
 
    -- save model
@@ -132,7 +133,7 @@ function train()
    model:clearState()
    local newDPT = nn.DataParallelTable(1)
    cutorch.setDevice(1)
-   newDPT:add(module:get(1), opt.GPU)
+   newDPT:add(model:get(1), 1)
    torch.save(paths.concat(opt.save, 'model_' .. epoch .. '.t7'), newDPT) -- defined in util.lua
    torch.save(paths.concat(opt.save, 'optimState_' .. epoch .. '.t7'), optimState)
 end -- of train()
@@ -157,7 +158,9 @@ function trainBatch(inputsCPU, labelsCPU)
    inputs:resize(inputsCPU:size()):copy(inputsCPU)
    labels:resize(labelsCPU:size()):copy(labelsCPU)
 
-   local err, outputs
+   local outputs = torch.CudaTensor()
+
+   local err
    feval = function(x)
       model:zeroGradParameters()
       outputs = model:forward(inputs)
@@ -179,11 +182,14 @@ function trainBatch(inputsCPU, labelsCPU)
    batchNumber = batchNumber + 1
    loss_epoch = loss_epoch + err
 
+  print(outputs)
+
    -- accuracy
    local correct = 0
-   local _, predictions = outputs:float()
-   for i = 1,opt.batchSize do
-     if predictions[i][labelsCPU[i]+1] > 0.5 then
+   local predictions = outputs:float()
+print(predictions)   
+for i = 1,opt.batchSize do
+     if outputs[i][labelsCPU[i]+1] > 0.5 then
        correct = correct + 1
      end
    end
