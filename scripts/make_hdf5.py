@@ -46,9 +46,9 @@ aut_m = 0
 con_m = 0
 
 for _, info in metadata.iteritems():
-    if info['is_autistic']:
+    if info['is_autistic'] and not info['is_failure']:
         aut_m += 1
-    else:
+    elif not info['is_failure']:
         con_m += 1
 
 # Counts
