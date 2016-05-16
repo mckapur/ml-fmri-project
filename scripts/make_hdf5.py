@@ -137,8 +137,12 @@ for f in os.listdir(mri_dir):
     if not f.endswith('.nii.gz'): # Iterate through all files of format .nii.gz
         continue
     print num, f
-    create_hdf5_dataset(f)
-    num += 1
+    try:
+        create_hdf5_dataset(f)
+    except:
+        print 'ERR'
+    finally:
+        num += 1
 
 # Setup metadata matrix dataset
 # "A /metadata vector with 6 values (in this order): number of autistic training samples, control training samples, autistic validation samples, control validation samples, autistic test samples, and control test samples."
