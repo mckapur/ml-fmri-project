@@ -61,8 +61,10 @@ con_test_m = 0
 
 # Create HDF5 dataset for a specific file
 def create_hdf5_dataset(f):
+    global aut_train_m, aut_val_m, aut_test_m, con_train_m, con_val_m, con_test_m
     f_id = f[:-20] # Strip off "_func_minimal.nii.gz" to get file_id
     if metadata[f_id]['is_failure'] == True: # If the MRI quality is poor (a failure), discard
+        print 'pass'
         return
 
     # Fetch labels and raw data
@@ -72,13 +74,19 @@ def create_hdf5_dataset(f):
 
     mri_data_shape = mri_data.shape
     if not mri_data_shape[0:3] == STANDARD_MRI_DIMENSIONALITY: # If the MRI scan is not of standard dimensionality 61x73x61xT, remove it
+        print 'pass'
         return
 
     # Normalize time axis to the standardized time step
     mri_time_step = mri_file.header['pixdim'][4]
+    print mri_time_step
     if mri_time_step > STANDARD_TIME_STEP: # We can't handle this!
         return
-    projected_timesteps = np.ceil(mri_data_shape[3]*mri_time_step/STANDARD_TIME_STEP) # Projected dimensionality/size of T in 1xXxYxZxT
+
+    projected_timesteps = np.floor(mri_data_shape[3]*mri_time_step/STANDARD_TIME_STEP) # Projected dimensionality/size of T in 1xXxYxZxT
+    if mri_data_shape[3]*(mri_time_step-1) % STANDARD_TIME_STEP == 0:
+        projected_timesteps += 1
+
     mri_data_norm = np.zeros(shape=(mri_data_shape[0:3] + (projected_timesteps,))) # Create the normalized MRI scan with the same dimensions for XxYxZ
     mri_data_norm_m = 0
     elapsed_from_standard = STANDARD_TIME_STEP # Add the first timestep
