@@ -23,8 +23,6 @@ function createModel(nGPU)
   model:add(nn.LogSoftMax())
 
   -- https://github.com/soumith/imagenet-multiGPU.torch/blob/master/models/alexnet.lua
-  -- Ship to GPU
-  model:cuda()
 
   -- Make parallel-ready
   local model_single = model

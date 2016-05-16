@@ -1,5 +1,14 @@
 require 'optim'
+require 'nn'
+require 'rnn'
+require 'cunn'
+require 'cudnn'
+require 'hdf5'
+require 'cutorch'
+require 'paths'
 
+local opts = paths.dofile('opts.lua')
+opt = opts.parse(args)
 paths.dofile('model.lua')
 paths.dofile('dataset.lua')
 
@@ -81,7 +90,7 @@ function train()
    loss_epoch = 0
    for i=1,opt.epochSize do
      local data, labels = sample(opt.batchSize)
-      trainBatch()
+     trainBatch(data, labels)
    end
 
    cutorch.synchronize()
@@ -121,7 +130,10 @@ function train()
    -- clear the intermediate states in the model before saving to disk
    -- this saves lots of disk space
    model:clearState()
-   saveDataParallel(paths.concat(opt.save, 'model_' .. epoch .. '.t7'), model) -- defined in util.lua
+   local newDPT = nn.DataParallelTable(1)
+   cutorch.setDevice(1)
+   newDPT:add(module:get(1), opt.GPU)
+   torch.save(paths.concat(opt.save, 'model_' .. epoch .. '.t7'), newDPT) -- defined in util.lua
    torch.save(paths.concat(opt.save, 'optimState_' .. epoch .. '.t7'), optimState)
 end -- of train()
 -------------------------------------------------------------------------------------------
@@ -184,4 +196,12 @@ function trainBatch(inputsCPU, labelsCPU)
           optimState.learningRate, dataLoadingTime))
 
    dataTimer:reset()
+end
+
+
+epoch = opt.epochNumber
+
+for i=1,opt.nEpochs do
+   train()
+   epoch = epoch + 1
 end
