@@ -83,9 +83,9 @@ def create_hdf5_dataset(f):
     if mri_time_step > STANDARD_TIME_STEP: # We can't handle this!
         return
 
-    projected_timesteps = np.floor(mri_data_shape[3]*mri_time_step/STANDARD_TIME_STEP) # Projected dimensionality/size of T in 1xXxYxZxT
-    if mri_data_shape[3]*(mri_time_step-1) % STANDARD_TIME_STEP == 0:
-        projected_timesteps += 1
+    projected_timesteps = int(mri_data_shape[3]*mri_time_step/STANDARD_TIME_STEP) + 1
+    if mri_data_shape[3]*mri_time_step/STANDARD_TIME_STEP % 1 == 0:
+        projected_timesteps -= 1
 
     mri_data_norm = np.zeros(shape=(mri_data_shape[0:3] + (projected_timesteps,))) # Create the normalized MRI scan with the same dimensions for XxYxZ
     mri_data_norm_m = 0
